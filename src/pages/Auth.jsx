@@ -47,7 +47,7 @@ export default function Auth({ mode, onAuthed }) {
           <div className="field"><label htmlFor="e">Email</label><input id="e" type="email" className="input" value={f.email} onChange={set('email')} autoComplete="email" required /></div>
           <div className="field"><label htmlFor="p">Password</label><input id="p" type="password" className="input" value={f.password} onChange={set('password')} autoComplete={signup ? 'new-password' : 'current-password'} required />{signup && <span className="hint">At least 10 characters.</span>}</div>
           {err && <div className="error-text" role="alert"><Icon name="warn" size={16} />{err}</div>}
-          <button className="btn lg" disabled={busy}>{busy ? 'One moment' : signup ? 'Create workspace' : 'Sign in'}</button>
+          <button className="btn lg" disabled={busy} aria-busy={busy}>{busy ? 'One moment' : signup ? 'Create workspace' : 'Sign in'}</button>
         </form>
         <p className="muted" style={{ fontSize: 14.5 }}>{signup ? <>Already have a workspace? <Link to="/login">Sign in</Link></> : <>New to LandVerify? <Link to="/signup">Create a workspace</Link></>}</p>
       </main>

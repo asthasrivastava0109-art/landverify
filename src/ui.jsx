@@ -128,7 +128,14 @@ export function ToastProvider({ children }) {
   );
 }
 
-export function Loading({ label = 'Loading' }) { return <div className="loading" role="status"><span className="spin" />{label}</div>; }
+export function Loading({ label = 'Loading' }) {
+  return (
+    <div className="loading" role="status" aria-live="polite">
+      <span className="sr-only">{label}</span>
+      <span className="sk h" aria-hidden="true" /><span className="sk" aria-hidden="true" /><span className="sk" aria-hidden="true" /><span className="sk" aria-hidden="true" /><span className="sk" aria-hidden="true" />
+    </div>
+  );
+}
 export function ErrorState({ error, retry }) {
   return (
     <div className="banner red" role="alert" style={{ margin: '24px 0' }}>

@@ -34,9 +34,13 @@ export default function Shell({ session, onSignOut }) {
         <div className="sep" />
         <NavLink to="/app/transaction-readiness" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}><Icon name="route" />Transaction Readiness<span className="soon">Early</span></NavLink>
         <div className="foot">
-          <div style={{ color: 'var(--ink)', fontWeight: 560 }}>{user.name}</div>
-          <div>{org.name}</div>
-          <div style={{ textTransform: 'capitalize' }}>{user.role}</div>
+          <div className="who">
+            <span className="avatar" aria-hidden="true">{initials(user.name)}</span>
+            <div style={{ minWidth: 0 }}>
+              <div className="nm">{user.name}</div>
+              <div className="org">{org.name} · <span style={{ textTransform: 'capitalize' }}>{user.role}</span></div>
+            </div>
+          </div>
           <button className="nav-item" onClick={out} style={{ marginTop: 8, marginLeft: -10, width: 'calc(100% + 10px)' }}><Icon name="logout" />Sign out</button>
         </div>
       </aside>
@@ -65,6 +69,8 @@ export default function Shell({ session, onSignOut }) {
     </div>
   );
 }
+
+const initials = (n = '') => n.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('') || '?';
 
 function Crumbs() {
   const { pathname } = useLocation();
@@ -234,7 +240,7 @@ function NewProperty({ onClose }) {
           {err && <div className="error-text full" role="alert"><Icon name="warn" size={16} />{err}</div>}
           <div className="full" style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
             <button type="button" className="btn secondary" onClick={onClose}>Cancel</button>
-            <button className="btn" disabled={busy}>{busy ? 'Creating' : 'Create property'}</button>
+            <button className="btn" disabled={busy} aria-busy={busy}>{busy ? 'Creating' : 'Create property'}</button>
           </div>
         </form>
       )}
@@ -353,7 +359,7 @@ function AddMember({ onClose, onDone }) {
         <div className="field"><label htmlFor="am-r">Role</label><select id="am-r" className="input" value={f.role} onChange={set('role')}>{Object.keys(ROLE_HELP).map((r) => <option key={r}>{r}</option>)}</select><span className="hint">{ROLE_HELP[f.role]}</span></div>
         <div className="field full"><label htmlFor="am-p">Temporary password</label><input id="am-p" type="password" className="input" value={f.password} onChange={set('password')} autoComplete="new-password" /><span className="hint">At least 10 characters. Share it privately and ask them to keep it safe.</span></div>
         {err && <div className="error-text full" role="alert"><Icon name="warn" size={16} />{err}</div>}
-        <div className="full" style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}><button type="button" className="btn secondary" onClick={onClose}>Cancel</button><button className="btn" disabled={busy}>{busy ? 'Adding' : 'Add member'}</button></div>
+        <div className="full" style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}><button type="button" className="btn secondary" onClick={onClose}>Cancel</button><button className="btn" disabled={busy} aria-busy={busy}>{busy ? 'Adding' : 'Add member'}</button></div>
       </form>
     </Modal>
   );

@@ -109,7 +109,7 @@ export default function Land({ p, user, cfg, reload }) {
             <h3 className="sec-h" style={{ fontSize: 17 }}>Compare sources</h3>
             <p className="sec-sub" style={{ maxWidth: 640 }}>Checks the property file against imported records. A match is technical, not a legal conclusion. A difference is something for a person to look into, not proof of a problem.</p>
           </div>
-          {write && <button className="btn secondary" onClick={compare} disabled={busy}>{busy ? 'Comparing…' : L.crossrefs.length ? 'Compare again' : 'Compare sources'}</button>}
+          {write && <button className="btn secondary" onClick={compare} disabled={busy} aria-busy={busy}>{busy ? 'Comparing…' : L.crossrefs.length ? 'Compare again' : 'Compare sources'}</button>}
         </div>
         {!L.crossrefs.length ? <p className="sub" style={{ marginTop: 10 }}>Not compared yet.</p> : (
           <div className="xr-list">
@@ -322,7 +322,7 @@ function ImportModal({ portal, meta, L, p, onClose, onDone }) {
         ))}
         <div className="field full"><label htmlFor="im-note">Note (optional)</label><input id="im-note" className="input" value={f.note} onChange={set('note')} /></div>
         {err && <div className="banner red full" role="alert"><Icon name="warn" /><div>{err}</div></div>}
-        <div className="actions full"><button type="button" className="btn secondary" onClick={onClose}>Cancel</button><button className="btn" type="submit" disabled={busy}>{busy ? 'Saving…' : 'Save imported record'}</button></div>
+        <div className="actions full"><button type="button" className="btn secondary" onClick={onClose}>Cancel</button><button className="btn" type="submit" disabled={busy} aria-busy={busy}>{busy ? 'Saving…' : 'Save imported record'}</button></div>
       </form>
     </Modal>
   );

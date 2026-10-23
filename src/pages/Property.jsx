@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, NavLink, Route, Routes, useNavigate, useParams } from 'react-router-dom';
+import { Link, NavLink, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { api, ago, fmtDate, fmtDateTime } from '../api.js';
 import {
   CHECK_STATUS, Empty, ErrorState, ExtractionChip, FSTATUS, Icon, Loading, Modal, OutcomeChip, OUTCOME, Prov, ProvMark, PROV, SeverityChip, SeverityGlyph, StatusChip, docLevel, useLoad, useToast,
@@ -28,6 +28,15 @@ export default function Property({ user }) {
   const prop = useLoad(() => api.get(`/api/properties/${id}`), [id]);
   const team = useLoad(() => api.get('/api/team'));
   const cfg = useLoad(() => api.get('/api/config'));
+  const section = useLocation().pathname.split('/')[4] || '';
+  // Keep the current tab visible when the tab row scrolls sideways on small screens.
+  const loaded = !!prop.data;
+  useEffect(() => {
+    const el = document.querySelector('.tabs a.active'); const row = el?.parentElement;
+    if (!row || row.scrollWidth <= row.clientWidth) return;
+    const a = el.getBoundingClientRect(), r = row.getBoundingClientRect();
+    row.scrollLeft += a.left - r.left - (r.width - a.width) / 2;
+  }, [section, loaded]);
   if (prop.loading && !prop.data) return <Loading label="Opening property" />;
   if (prop.error) return prop.error.status === 404
     ? <Empty title="Property not found" action={<Link className="btn" to="/app/properties">Back to properties</Link>}>It may have been deleted, or it belongs to another workspace.</Empty>
@@ -50,7 +59,7 @@ export default function Property({ user }) {
           {p.state === 'Uttar Pradesh' && tab('land', 'Maps & records')}{tab('findings', 'Findings', p.open_findings || '')}{tab('reviews', 'Reviews')}{tab('reports', 'Reports')}{tab('activity', 'Activity')}
         </nav>
       </div>
-      <div style={{ paddingTop: 8 }}>
+      <div className="tab-panel" key={section} style={{ paddingTop: 8 }}>
         <Routes>
           <Route index element={<Overview {...ctx} />} />
           <Route path="documents" element={<Documents {...ctx} />} />
@@ -80,7 +89,7 @@ function Parcel({ p }) {
   const sourced = p.boundary_source === 'survey';
   return (
     <figure style={{ margin: 0 }}>
-      <svg viewBox="0 0 400 260" role="img" aria-label={sourced ? 'Parcel boundary from survey data' : 'Illustrative parcel outline, not from survey data'} style={{ width: '100%', border: '1px solid var(--line)', borderRadius: 8, background: '#fff' }}>
+      <svg viewBox="0 0 400 260" role="img" aria-label={sourced ? 'Parcel boundary from survey data' : 'Illustrative parcel outline, not from survey data'} style={{ width: '100%', border: '1px solid var(--line)', borderRadius: 10, background: '#fff', boxShadow: 'var(--sh-xs)' }}>
         <defs><pattern id="pg" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="#EDEDE8" /></pattern></defs>
         <rect width="400" height="260" fill="url(#pg)" />
         <polygon points={d} fill="#E8EEF8" fillOpacity=".6" stroke="#174EA6" strokeWidth="2" strokeDasharray={sourced ? '0' : '6 5'} strokeLinejoin="round" pathLength="1000" className="draw" style={{ '--len': 1000, animationDuration: '1.2s' }} />
@@ -167,7 +176,7 @@ function Overview({ p, user, team, cfg, reload }) {
       </div>
 
       <aside>
-        <div style={{ borderTop: '2px solid var(--ink)', paddingTop: 18 }}>
+        <div className="side-next">
           <span className="chip blue">Next step</span>
           <h3 style={{ fontSize: 20, fontWeight: 620, letterSpacing: '-.015em', margin: '10px 0 14px' }}>{next.t}</h3>
           <Link className="btn" to={`/app/properties/${p.id}/${next.to}`}>{next.btn}</Link>
@@ -207,7 +216,7 @@ export function EditProperty({ p, cfg, onClose, onDone }) {
         <div className="field"><label htmlFor="ep-p">Property type</label><select id="ep-p" className="input" value={f.property_type} onChange={set('property_type')}><option value="">Not recorded</option>{PROPERTY_TYPES.map((u) => <option key={u}>{u}</option>)}</select></div>
         <div className="field"><label htmlFor="ep-o">Claimed owner</label><input id="ep-o" className="input" value={f.claimed_owner} onChange={set('claimed_owner')} /></div>
         {err && <div className="error-text full" role="alert"><Icon name="warn" size={16} />{err}</div>}
-        <div className="full" style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}><button type="button" className="btn secondary" onClick={onClose}>Cancel</button><button className="btn" disabled={busy}>{busy ? 'Saving' : 'Save changes'}</button></div>
+        <div className="full" style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}><button type="button" className="btn secondary" onClick={onClose}>Cancel</button><button className="btn" disabled={busy} aria-busy={busy}>{busy ? 'Saving' : 'Save changes'}</button></div>
       </form>
     </Modal>
   );
@@ -272,7 +281,7 @@ function Upload({ p, onClose, onDone }) {
         <div className="field"><label htmlFor="u-p">Related parties</label><input id="u-p" className="input" value={f.parties} onChange={set('parties')} /></div>
         <div className="field"><label htmlFor="u-i">Property identifiers on the document</label><input id="u-i" className="input" value={f.identifiers} onChange={set('identifiers')} /></div>
         {err && <div className="error-text full" role="alert"><Icon name="warn" size={16} />{err}</div>}
-        <div className="full" style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}><button type="button" className="btn secondary" onClick={onClose}>Cancel</button><button className="btn" disabled={busy}>{busy ? 'Uploading' : 'Upload'}</button></div>
+        <div className="full" style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}><button type="button" className="btn secondary" onClick={onClose}>Cancel</button><button className="btn" disabled={busy} aria-busy={busy}>{busy ? 'Uploading' : 'Upload'}</button></div>
       </form>
     </Modal>
   );
@@ -287,13 +296,15 @@ function Diligence({ p, user, team, cfg, reload }) {
     <div style={{ marginTop: 32 }}>
       <h2 className="page-h" style={{ fontSize: 28 }}>Understand what has been checked.</h2>
       <p className="page-sub" style={{ fontSize: 16, maxWidth: '40em' }}>Completion and findings are separate. A completed check can still report an issue, and a completed checklist does not mean the property has a legally clear title.</p>
-      {loading ? <Loading /> : error ? <ErrorState error={error} retry={rl} /> : (
+      {loading && !data ? <Loading /> : error ? <ErrorState error={error} retry={rl} /> : (
         <div style={{ marginTop: 32 }}>
           {cfg?.categories.map((c) => {
             const list = data.filter((x) => x.category === c.key);
+            const pct = list.length ? Math.round((done(c.key) / list.length) * 100) : 0;
             return (
               <section className="check-group" key={c.key}>
                 <h3>{c.label}<span className="sub" style={{ fontWeight: 400, fontSize: 14 }}>{done(c.key)} of {list.length} completed</span></h3>
+                <div className={`group-bar ${list.length && pct === 100 ? 'full' : ''}`} aria-hidden="true"><GrowBar pct={pct} /></div>
                 {list.map((k) => <CheckRow key={k.id} k={k} p={p} user={user} team={team} onSaved={() => { rl(); reload(); }} />)}
                 {canWrite(user) && <button className="btn quiet sm" style={{ marginTop: 8 }} onClick={() => setAdding(c)}><Icon name="plus" size={14} />Add a check</button>}
               </section>
@@ -304,6 +315,13 @@ function Diligence({ p, user, team, cfg, reload }) {
       {adding && <AddCheck p={p} cat={adding} onClose={() => setAdding(null)} onDone={() => { setAdding(null); rl(); reload(); }} />}
     </div>
   );
+}
+
+// Grows from zero on first paint, then follows real changes in the completed count.
+function GrowBar({ pct }) {
+  const [w, setW] = useState(0);
+  useEffect(() => { const r = requestAnimationFrame(() => setW(pct)); return () => cancelAnimationFrame(r); }, [pct]);
+  return <i style={{ width: `${w}%` }} />;
 }
 
 function CheckRow({ k, p, user, team, onSaved }) {
@@ -337,7 +355,7 @@ function CheckRow({ k, p, user, team, onSaved }) {
         </div>
         {err && <div className="error-text" role="alert"><Icon name="warn" size={16} />{err}</div>}
         {write && <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          <button className="btn sm" disabled={busy}>{busy ? 'Saving' : 'Save check'}</button>
+          <button className="btn sm" disabled={busy} aria-busy={busy}>{busy ? 'Saving' : 'Save check'}</button>
           {(k.outcome === 'issue_found' || f.outcome === 'issue_found') && <button type="button" className="btn secondary sm" onClick={() => setFinding(true)}>Raise a finding</button>}
         </div>}
       </form>
@@ -356,7 +374,7 @@ function AddCheck({ p, cat, onClose, onDone }) {
         <div className="field"><label htmlFor="ac-t">What needs checking</label><input id="ac-t" className="input" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} /></div>
         <div className="field"><label htmlFor="ac-d">Detail (optional)</label><textarea id="ac-d" className="input" value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} /></div>
         {err && <div className="error-text" role="alert"><Icon name="warn" size={16} />{err}</div>}
-        <div className="actions" style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}><button type="button" className="btn secondary" onClick={onClose}>Cancel</button><button className="btn" disabled={busy}>Add check</button></div>
+        <div className="actions" style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}><button type="button" className="btn secondary" onClick={onClose}>Cancel</button><button className="btn" disabled={busy} aria-busy={busy}>Add check</button></div>
       </form>
     </Modal>
   );
@@ -383,7 +401,7 @@ export function NewFinding({ p, team, preset = {}, onClose, onDone }) {
         <div className="field full"><label htmlFor="nf-doc">Related document</label><select id="nf-doc" className="input" value={f.document_id} onChange={set('document_id')}><option value="">None</option>{docs.data?.map((d) => <option key={d.id} value={d.id}>{d.title}</option>)}</select></div>
         <div className="field full"><label htmlFor="nf-n">Recommended next step</label><input id="nf-n" className="input" value={f.next_step} onChange={set('next_step')} /></div>
         {err && <div className="error-text full" role="alert"><Icon name="warn" size={16} />{err}</div>}
-        <div className="full" style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}><button type="button" className="btn secondary" onClick={onClose}>Cancel</button><button className="btn" disabled={busy}>{busy ? 'Saving' : 'Record finding'}</button></div>
+        <div className="full" style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}><button type="button" className="btn secondary" onClick={onClose}>Cancel</button><button className="btn" disabled={busy} aria-busy={busy}>{busy ? 'Saving' : 'Record finding'}</button></div>
       </form>
     </Modal>
   );
@@ -427,7 +445,7 @@ function Findings({ p, user, team, reload }) {
               {['open', 'in_review'].includes(f.status) && <button className="btn sm" onClick={() => setResolve({ f, status: 'resolved' })}>Resolve finding</button>}
               {['open', 'in_review'].includes(f.status) && isReviewer(user) && <button className="btn secondary sm" onClick={() => setResolve({ f, status: 'accepted' })}>Accept risk</button>}
               {['resolved', 'accepted'].includes(f.status) && <button className="btn secondary sm" onClick={() => patch(f, { status: 'open' }, 'Finding reopened.')}>Reopen</button>}
-              {['open', 'in_review'].includes(f.status) && <select className="input" style={{ width: 'auto', minHeight: 34, padding: '4px 10px' }} aria-label="Assign owner" value={f.owner_id || ''} onChange={(e) => patch(f, { owner_id: e.target.value }, 'Owner updated.')}><option value="">Unassigned</option>{team.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</select>}
+              {['open', 'in_review'].includes(f.status) && <select className="input" style={{ width: 'auto', minHeight: 34, padding: '4px 34px 4px 14px', borderRadius: 999, fontSize: 13.5 }} aria-label="Assign owner" value={f.owner_id || ''} onChange={(e) => patch(f, { owner_id: e.target.value }, 'Owner updated.')}><option value="">Unassigned</option>{team.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</select>}
             </div>}
           </div>
         </article>
@@ -448,7 +466,7 @@ function ResolveModal({ r, onClose, onDone }) {
         <p className="muted">{r.f.title}</p>
         <div className="field"><label htmlFor="rs-n">{accept ? 'Why is this risk acceptable?' : 'How was it resolved?'}</label><textarea id="rs-n" className="input" value={note} onChange={(e) => setNote(e.target.value)} /><span className="hint">This reason stays visible in the file, reports and history.</span></div>
         {err && <div className="error-text" role="alert"><Icon name="warn" size={16} />{err}</div>}
-        <div className="actions" style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}><button type="button" className="btn secondary" onClick={onClose}>Cancel</button><button className="btn" disabled={busy}>{accept ? 'Accept risk' : 'Resolve finding'}</button></div>
+        <div className="actions" style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}><button type="button" className="btn secondary" onClick={onClose}>Cancel</button><button className="btn" disabled={busy} aria-busy={busy}>{accept ? 'Accept risk' : 'Resolve finding'}</button></div>
       </form>
     </Modal>
   );
@@ -485,7 +503,7 @@ function Reviews({ p, user, team, reload }) {
           </div>
           <div className="field"><label htmlFor="rv-b">Note</label><textarea id="rv-b" className="input" value={f.body} onChange={set('body')} placeholder="Say what you saw and why" /></div>
           {err && <div className="error-text" role="alert"><Icon name="warn" size={16} />{err}</div>}
-          <div><button className="btn" disabled={busy}>{busy ? 'Recording' : f.kind === 'comment' ? 'Add comment' : 'Record'}</button></div>
+          <div><button className="btn" disabled={busy} aria-busy={busy}>{busy ? 'Recording' : f.kind === 'comment' ? 'Add comment' : 'Record'}</button></div>
         </form>
         <h3 className="sec-h" style={{ marginTop: 48, marginBottom: 14 }}>History</h3>
         {loading ? <Loading /> : error ? <ErrorState error={error} retry={rl} /> : !data.length ? <Empty title="No review activity yet">Comments, requests and decisions will appear here.</Empty> : data.map((r) => (
@@ -531,7 +549,7 @@ function Reports({ p, user }) {
     <div style={{ marginTop: 32, maxWidth: 860 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
         <div><h2 className="page-h" style={{ fontSize: 28 }}>Due diligence report</h2><p className="page-sub" style={{ fontSize: 16 }}>A PDF snapshot of this file as it stands today.</p></div>
-        {canWrite(user) && <button className="btn" onClick={gen} disabled={busy}><Icon name="report" size={16} />{busy ? 'Generating' : 'Generate report'}</button>}
+        {canWrite(user) && <button className="btn" onClick={gen} disabled={busy} aria-busy={busy}><Icon name="report" size={16} />{busy ? 'Generating' : 'Generate report'}</button>}
       </div>
       <h3 className="sec-h" style={{ marginTop: 32 }}>Every report includes</h3>
       <ul className="rule-list" style={{ fontSize: 14.5, marginTop: 8 }}>{['The scope of checks, grouped as on the Due diligence tab', 'Evidence reviewed, with how each document was verified', 'Sources consulted, and which integrations were not used', 'Findings, with severity, owner and next step', 'Limitations, and the questions still unresolved'].map((t) => <li key={t}>{t}</li>)}</ul>
